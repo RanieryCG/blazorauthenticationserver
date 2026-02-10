@@ -1,0 +1,49 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication.Cookies
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+    <NotAuthorized Context="notAuthorized">
+        <EditForm FormName="LoginForm" Model="loginModel" OnValidSubmit="LogarUsuario" class="d-flex justify-content-center align-items-center flex-column w-50">
+            <DataAnnotationsValidator />
+            <InputText class="form-control mb-3" @bind-Value="loginModel.Email" placeholder="Digite seu e-mail para login" />
+            <InputText class="form-control mb-3" @bind-Value="loginModel.Password" type="password" placeholder="Digite sua senha" />
+            <button type="submit" class="btn btn-success w-100">Login</button>
+        </EditForm>
+    </NotAuthorized>
+    <Authorized>
+        <p>O usuário @context.User.Identity?.Name está logado</p>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    private LoginForm loginModel { get; set; } = new();
+
+    public async Task LogarUsuario()
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, loginModel.Email)
+        };
+        var identity = new ClaimsIdentity(claims,CookieAuthenticationDefaults.AuthenticationScheme);
+
+        var principal = new ClaimsPrincipal(identity);
+
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+    public class LoginForm
+    {
+        [Required]
+        public string Email { get; set; } = string.Empty;
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}
